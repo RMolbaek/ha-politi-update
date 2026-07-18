@@ -1,0 +1,47 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "POLITI UPDATE",
+        "description": "Select the police districts you want to follow. Category filter is optional (empty = all messages).",
+        "data": {
+          "districts": "Police districts",
+          "categories": "Categories (optional)",
+          "scan_interval": "Update interval (minutes)"
+        }
+      }
+    },
+    "error": {
+      "no_districts": "Select at least one police district."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "POLITI UPDATE",
+        "description": "Change which districts and categories you follow, or the update interval.",
+        "data": {
+          "districts": "Police districts",
+          "categories": "Categories (optional)",
+          "scan_interval": "Update interval (minutes)"
+        }
+      }
+    },
+    "error": {
+      "no_districts": "Select at least one police district."
+    }
+  },
+  "entity": {
+    "event": {
+      "politi_update": {
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "ny_melding": "New message"
+            }
+          }
+        }
+      }
+    }
+  }
+}

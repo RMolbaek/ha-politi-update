@@ -1,0 +1,47 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "POLITI UPDATE",
+        "description": "Vælg de politikredse, du vil følge. Kategori-filter er valgfrit (tomt = alle meldinger).",
+        "data": {
+          "districts": "Politikredse",
+          "categories": "Kategorier (valgfrit)",
+          "scan_interval": "Opdateringsinterval (minutter)"
+        }
+      }
+    },
+    "error": {
+      "no_districts": "Vælg mindst én politikreds."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "POLITI UPDATE",
+        "description": "Ret hvilke kredse og kategorier du følger, eller opdateringsintervallet.",
+        "data": {
+          "districts": "Politikredse",
+          "categories": "Kategorier (valgfrit)",
+          "scan_interval": "Opdateringsinterval (minutter)"
+        }
+      }
+    },
+    "error": {
+      "no_districts": "Vælg mindst én politikreds."
+    }
+  },
+  "entity": {
+    "event": {
+      "politi_update": {
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "ny_melding": "Ny melding"
+            }
+          }
+        }
+      }
+    }
+  }
+}
