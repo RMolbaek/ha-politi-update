@@ -16,7 +16,12 @@
     <button id="settingsBtn" class="icon-btn" aria-label="Indstillinger">⚙︎</button>
   </header>
 
-  <main>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="price" aria-selected="true">Pristjek</button>
+    <button role="tab" data-tab="deals" aria-selected="false">Tilbudsjæger</button>
+  </nav>
+
+  <main id="tab-price">
     <section class="card capture">
       <p class="lead">Kig på en vin – find ud af, om den kan købes billigere.</p>
       <label class="btn primary big">
@@ -84,6 +89,89 @@
       <ul id="history" class="history"></ul>
     </section>
   </main>
+
+  <main id="tab-deals" hidden>
+    <section class="card">
+      <p class="lead">Fortæl hvad du kan lide – så jagter agenten de bedste tilbud lige nu.</p>
+      <div class="row profile-row">
+        <label class="field">
+          <span>Profil</span>
+          <select id="profileSelect"></select>
+        </label>
+        <div class="profile-actions">
+          <button class="btn small" id="newProfile" type="button">+ Ny</button>
+          <button class="btn small" id="deleteProfile" type="button">Slet</button>
+        </div>
+      </div>
+      <label class="field">
+        <span>Navn på profil</span>
+        <input id="profileName" maxlength="40" placeholder="Fx Weekendvin">
+      </label>
+    </section>
+
+    <div id="rules"></div>
+    <button class="btn big" id="addRule" type="button">+ Tilføj regel</button>
+
+    <section class="card">
+      <h2>Generelt</h2>
+      <div class="row">
+        <label class="field">
+          <span>Max pris pr. flaske</span>
+          <input id="dealMaxPrice" type="number" inputmode="decimal" min="1" placeholder="Valgfri">
+        </label>
+        <label class="field">
+          <span>Mindst rabat (%)</span>
+          <input id="dealMinDiscount" type="number" inputmode="numeric" min="0" max="90" placeholder="Valgfri">
+        </label>
+      </div>
+      <label class="field">
+        <span>Andre ønsker</span>
+        <textarea id="dealNotes" rows="2" maxlength="500" placeholder="Fx gerne modne årgange, ikke naturvin"></textarea>
+      </label>
+      <button class="btn primary big" id="huntBtn" type="button">🔎 Find tilbud nu</button>
+      <p class="muted small">Agenten gennemsøger danske vinhandlere og supermarkeder. Det tager typisk 2–5 minutter – du kan godt lukke appen imens.</p>
+    </section>
+
+    <section id="dealStatus" class="card status" hidden>
+      <div class="spinner" aria-hidden="true"></div>
+      <div id="dealStatusText">Jagter tilbud…</div>
+    </section>
+
+    <section id="dealError" class="card error" hidden></section>
+
+    <section id="dealResults" hidden>
+      <p id="dealSummary" class="card"></p>
+      <ul id="dealList" class="deals"></ul>
+      <p class="muted small pad">
+        Tilbuddene er fundet automatisk og kan være udløbet – tjek altid hos forhandleren.
+        <a href="#" id="dealRefresh">Jag igen</a>
+      </p>
+    </section>
+  </main>
+
+  <template id="ruleTpl">
+    <section class="card rule">
+      <div class="rule-head">
+        <h2 class="rule-title">Regel</h2>
+        <button class="btn small rule-remove" type="button" aria-label="Fjern regel">✕</button>
+      </div>
+      <div class="chips">
+        <label><input type="checkbox" value="rød"><span>Rød</span></label>
+        <label><input type="checkbox" value="hvid"><span>Hvid</span></label>
+        <label><input type="checkbox" value="rosé"><span>Rosé</span></label>
+        <label><input type="checkbox" value="mousserende"><span>Mousserende</span></label>
+        <label><input type="checkbox" value="dessert/hedvin"><span>Dessert/hedvin</span></label>
+      </div>
+      <label class="field"><span>Områder</span>
+        <input data-k="regions" placeholder="Fx Bourgogne, Barolo, Rioja"></label>
+      <label class="field"><span>Druer</span>
+        <input data-k="grapes" placeholder="Fx Pinot Noir, Nebbiolo"></label>
+      <label class="field"><span>Producenter / huse</span>
+        <input data-k="producers" placeholder="Fx Giacomo Conterno, Faiveley"></label>
+      <label class="field"><span>Max pris for denne regel</span>
+        <input data-k="max_price" type="number" inputmode="decimal" min="1" placeholder="Valgfri"></label>
+    </section>
+  </template>
 
   <dialog id="settings">
     <form method="dialog">

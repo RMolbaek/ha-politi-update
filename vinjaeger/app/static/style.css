@@ -40,7 +40,6 @@ body {
 main { max-width: 560px; margin: 0 auto; padding: 0 16px 32px; }
 
 .top {
-  position: sticky; top: 0; z-index: 2;
   display: flex; align-items: center; justify-content: space-between;
   padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
   background: var(--accent); color: var(--accent-text);
@@ -133,3 +132,55 @@ dialog {
 dialog::backdrop { background: rgba(0, 0, 0, .45); }
 dialog menu { display: flex; justify-content: space-between; padding: 0; margin: 12px 0 0; }
 a { color: var(--accent); }
+
+/* ---------- Faner ---------- */
+.tabs {
+  position: sticky; top: 0; z-index: 2;
+  display: grid; grid-template-columns: 1fr 1fr;
+  background: var(--accent);
+}
+.tabs button {
+  background: none; border: 0; color: var(--accent-text); opacity: .75;
+  font: inherit; font-weight: 600; padding: 10px; cursor: pointer;
+  border-bottom: 3px solid transparent;
+}
+.tabs button[aria-selected="true"] { opacity: 1; border-bottom-color: var(--accent-text); }
+
+/* ---------- Tilbudsjæger ---------- */
+select, textarea {
+  width: 100%; padding: 11px 12px; font: inherit; color: var(--text);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+}
+textarea { resize: vertical; }
+.profile-row { grid-template-columns: 1fr auto; align-items: end; }
+.profile-actions { display: flex; gap: 6px; margin-bottom: 10px; }
+
+.rule-head { display: flex; justify-content: space-between; align-items: center; }
+.rule-head h2 { margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.chips input { position: absolute; opacity: 0; pointer-events: none; }
+.chips span {
+  display: inline-block; padding: 6px 12px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--bg); font-size: .9375rem;
+}
+.chips input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.chips input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.deals { list-style: none; margin: 14px 0 0; padding: 0; }
+.deal {
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px; margin-bottom: 10px;
+}
+.deal-top { display: flex; justify-content: space-between; gap: 10px; align-items: start; }
+.deal-name { font-weight: 700; overflow-wrap: anywhere; }
+.score {
+  flex: none; min-width: 40px; text-align: center; padding: 4px 8px; border-radius: 8px;
+  background: var(--good-bg); color: var(--good); font-weight: 800;
+}
+.score.mid { background: var(--bg); color: var(--muted); }
+.deal-prices { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 8px 0 4px; }
+.deal-price { font-size: 1.5rem; font-weight: 800; }
+.deal-normal { color: var(--muted); text-decoration: line-through; }
+.discount { background: var(--bad-bg); color: var(--bad); font-weight: 700; padding: 2px 8px; border-radius: 999px; font-size: .875rem; }
+.deal-why { margin: 6px 0 10px; }
+.deal .btn { width: 100%; }

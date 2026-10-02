@@ -13,7 +13,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import claude
-from .models import SearchResult, WineIdentity
+from .deals import JobRunner
+from .models import DealCriteria, DealJob, SearchResult, WineIdentity
 from .pricing import TTLCache, normalize_offers, pick_cheapest
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,6 +24,8 @@ IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 
 ACCESS_TOKEN = os.environ.get("VINJAEGER_TOKEN", "")
 cache = TTLCache(ttl_seconds=float(os.environ.get("VINJAEGER_CACHE_HOURS", "6")) * 3600)
+
+deal_jobs = JobRunner()
 
 app = FastAPI(title="Vinjæger")
 
@@ -87,6 +90,25 @@ async def search(
     )
     cache.set(key, result)
     return result
+
+
+@app.post("/api/deals", dependencies=[Depends(require_token)])
+async def start_deals(criteria: DealCriteria, refresh: bool = False) -> DealJob:
+    """Start en tilbudsjagt. Svaret har et job-id, som polles på GET /api/deals/{id}."""
+    if all(rule.is_empty() for rule in criteria.rules):
+        raise HTTPException(422, "Udfyld mindst én regel (type, område, drue eller producent)")
+    try:
+        return deal_jobs.start(criteria, refresh)
+    except RuntimeError as err:
+        raise HTTPException(429, str(err)) from err
+
+
+@app.get("/api/deals/{job_id}", dependencies=[Depends(require_token)])
+async def get_deals(job_id: str) -> DealJob:
+    job = deal_jobs.get(job_id)
+    if not job:
+        raise HTTPException(404, "Tilbudsjagten findes ikke (længere)")
+    return job
 
 
 @app.get("/")

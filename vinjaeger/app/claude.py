@@ -131,24 +131,28 @@ def _search_request(query: str, vintage: int | None, ean: str | None) -> str:
     return "\n".join(lines)
 
 
-async def find_offers(
-    query: str, vintage: int | None = None, ean: str | None = None
-) -> dict[str, Any]:
-    """Lad Claude søge nettet igennem og returnér rå tilbud + opsummering."""
-    client = _client()
-    tools: list[dict[str, Any]] = [
+def _web_tools(searches: int, fetches: int) -> list[dict[str, Any]]:
+    return [
         {
             "type": "web_search_20260209",
             "name": "web_search",
-            "max_uses": 8,
+            "max_uses": searches,
             "user_location": {"type": "approximate", "country": "DK"},
         },
-        {"type": "web_fetch_20260209", "name": "web_fetch", "max_uses": 12},
-        REPORT_TOOL,
+        {"type": "web_fetch_20260209", "name": "web_fetch", "max_uses": fetches},
     ]
-    messages: list[dict[str, Any]] = [
-        {"role": "user", "content": _search_request(query, vintage, ean)}
-    ]
+
+
+async def _run_agent(
+    system: str,
+    request: str,
+    tools: list[dict[str, Any]],
+    report_tool: str,
+    effort: str = "medium",
+) -> dict[str, Any]:
+    """Kør Claude med websøgning, indtil den kalder rapport-værktøjet."""
+    client = _client()
+    messages: list[dict[str, Any]] = [{"role": "user", "content": request}]
 
     for _ in range(MAX_ROUNDS):
         response = await client.beta.messages.create(
@@ -156,8 +160,8 @@ async def find_offers(
             max_tokens=16000,
             betas=[FALLBACK_BETA],
             fallbacks="default",
-            output_config={"effort": "medium"},
-            system=SEARCH_SYSTEM,
+            output_config={"effort": effort},
+            system=system,
             tools=tools,
             messages=messages,
         )
@@ -165,7 +169,7 @@ async def find_offers(
             raise ClaudeError("Søgningen blev afvist.")
 
         for block in response.content:
-            if block.type == "tool_use" and block.name == "report_offers":
+            if block.type == "tool_use" and block.name == report_tool:
                 return dict(block.input)
 
         messages.append({"role": "assistant", "content": response.content})
@@ -173,8 +177,20 @@ async def find_offers(
             # Serverværktøjerne er ikke færdige endnu - send igen for at fortsætte.
             continue
         messages.append(
-            {"role": "user", "content": "Kald nu report_offers med det, du har fundet."}
+            {"role": "user", "content": f"Kald nu {report_tool} med det, du har fundet."}
         )
 
-    _LOGGER.warning("Ingen report_offers efter %s runder for %r", MAX_ROUNDS, query)
+    _LOGGER.warning("Ingen %s efter %s runder", report_tool, MAX_ROUNDS)
     raise ClaudeError("Søgningen blev ikke færdig. Prøv igen.")
+
+
+async def find_offers(
+    query: str, vintage: int | None = None, ean: str | None = None
+) -> dict[str, Any]:
+    """Lad Claude søge nettet igennem og returnér rå tilbud + opsummering."""
+    return await _run_agent(
+        SEARCH_SYSTEM,
+        _search_request(query, vintage, ean),
+        [*_web_tools(searches=8, fetches=12), REPORT_TOOL],
+        "report_offers",
+    )

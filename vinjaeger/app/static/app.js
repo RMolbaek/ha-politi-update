@@ -277,3 +277,245 @@ $("clearHistory").addEventListener("click", () => {
 });
 
 renderHistory();
+
+/* ================= Faner ================= */
+
+function selectTab(name) {
+  document.querySelectorAll(".tabs button").forEach((b) => {
+    b.setAttribute("aria-selected", String(b.dataset.tab === name));
+  });
+  $("tab-price").hidden = name !== "price";
+  $("tab-deals").hidden = name !== "deals";
+  store.set("tab", name);
+}
+document.querySelector(".tabs").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-tab]");
+  if (btn) selectTab(btn.dataset.tab);
+});
+
+/* ================= Tilbudsjæger ================= */
+
+const EXAMPLE_PROFILE = {
+  name: "Mine favoritter",
+  criteria: {
+    rules: [
+      { colors: ["rød"], regions: ["Bourgogne"], grapes: [], producers: [], max_price: null },
+      { colors: ["rød"], regions: ["Barolo", "Barbaresco"], grapes: ["Nebbiolo"], producers: [], max_price: null },
+    ],
+    max_price: 400,
+    min_discount: null,
+    notes: "",
+  },
+};
+const EMPTY_RULE = { colors: [], regions: [], grapes: [], producers: [], max_price: null };
+
+let profiles = store.get("profiles", null) || [EXAMPLE_PROFILE];
+let currentProfile = Math.min(store.get("currentProfile", 0), profiles.length - 1);
+
+const splitList = (v) => v.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 15);
+const numOrNull = (v) => (v === "" || v == null ? null : Number(v));
+
+function addRuleCard(rule = EMPTY_RULE) {
+  const node = $("ruleTpl").content.firstElementChild.cloneNode(true);
+  node.querySelectorAll(".chips input").forEach((cb) => { cb.checked = rule.colors.includes(cb.value); });
+  for (const k of ["regions", "grapes", "producers"]) {
+    node.querySelector(`[data-k="${k}"]`).value = (rule[k] || []).join(", ");
+  }
+  node.querySelector('[data-k="max_price"]').value = rule.max_price ?? "";
+  node.querySelector(".rule-remove").addEventListener("click", () => {
+    if ($("rules").children.length > 1) { node.remove(); numberRules(); }
+  });
+  $("rules").append(node);
+  numberRules();
+}
+
+function numberRules() {
+  [...$("rules").children].forEach((el, i) => {
+    el.querySelector(".rule-title").textContent = `Regel ${i + 1}`;
+  });
+}
+
+function readCriteria() {
+  const rules = [...$("rules").children].map((el) => ({
+    colors: [...el.querySelectorAll(".chips input:checked")].map((cb) => cb.value),
+    regions: splitList(el.querySelector('[data-k="regions"]').value),
+    grapes: splitList(el.querySelector('[data-k="grapes"]').value),
+    producers: splitList(el.querySelector('[data-k="producers"]').value),
+    max_price: numOrNull(el.querySelector('[data-k="max_price"]').value),
+  }));
+  return {
+    rules,
+    max_price: numOrNull($("dealMaxPrice").value),
+    min_discount: numOrNull($("dealMinDiscount").value),
+    notes: $("dealNotes").value.trim() || null,
+  };
+}
+
+function loadProfile(i) {
+  currentProfile = i;
+  store.set("currentProfile", i);
+  const p = profiles[i];
+  $("profileName").value = p.name;
+  $("rules").innerHTML = "";
+  (p.criteria.rules.length ? p.criteria.rules : [EMPTY_RULE]).forEach(addRuleCard);
+  $("dealMaxPrice").value = p.criteria.max_price ?? "";
+  $("dealMinDiscount").value = p.criteria.min_discount ?? "";
+  $("dealNotes").value = p.criteria.notes ?? "";
+  renderProfileSelect();
+}
+
+function renderProfileSelect() {
+  $("profileSelect").innerHTML = profiles
+    .map((p, i) => `<option value="${i}"${i === currentProfile ? " selected" : ""}>${esc(p.name)}</option>`)
+    .join("");
+}
+
+function saveProfile() {
+  profiles[currentProfile] = {
+    name: $("profileName").value.trim() || `Profil ${currentProfile + 1}`,
+    criteria: readCriteria(),
+  };
+  store.set("profiles", profiles);
+  renderProfileSelect();
+}
+
+// Gem automatisk, når der ændres i formularen.
+$("tab-deals").addEventListener("input", (e) => { if (e.target.id !== "profileSelect") saveProfile(); });
+$("tab-deals").addEventListener("change", (e) => {
+  if (e.target.id === "profileSelect") loadProfile(Number(e.target.value));
+  else saveProfile();
+});
+$("addRule").addEventListener("click", () => { if ($("rules").children.length < 10) { addRuleCard(); saveProfile(); } });
+$("rules").addEventListener("click", (e) => { if (e.target.closest(".rule-remove")) saveProfile(); });
+$("newProfile").addEventListener("click", () => {
+  profiles.push({ name: `Profil ${profiles.length + 1}`, criteria: { rules: [EMPTY_RULE], max_price: null, min_discount: null, notes: "" } });
+  store.set("profiles", profiles);
+  loadProfile(profiles.length - 1);
+  $("profileName").select();
+});
+$("deleteProfile").addEventListener("click", () => {
+  if (profiles.length <= 1 || !confirm(`Slet profilen "${profiles[currentProfile].name}"?`)) return;
+  profiles.splice(currentProfile, 1);
+  store.set("profiles", profiles);
+  loadProfile(0);
+});
+
+/* ---------- Jagten ---------- */
+
+let pollTimer = null;
+let dealStatusTimer = null;
+const HUNT_MESSAGES = [
+  "Agenten er sendt på jagt…",
+  "Gennemgår tilbudssider hos vinhandlere…",
+  "Tjekker supermarkedernes vintilbud…",
+  "Åbner produktsider og læser priser…",
+  "Sammenligner med normalpriser…",
+  "Vurderer hvilke tilbud der er gode køb…",
+  "Næsten færdig – samler de bedste fund…",
+];
+
+function setHunting(on) {
+  $("huntBtn").disabled = on;
+  clearInterval(dealStatusTimer);
+  $("dealStatus").hidden = !on;
+  if (!on) return;
+  let i = 0;
+  $("dealStatusText").textContent = HUNT_MESSAGES[0];
+  dealStatusTimer = setInterval(() => {
+    i = Math.min(i + 1, HUNT_MESSAGES.length - 1);
+    $("dealStatusText").textContent = HUNT_MESSAGES[i];
+  }, 20000);
+}
+
+async function hunt(refresh = false) {
+  saveProfile();
+  hide("dealError");
+  hide("dealResults");
+  setHunting(true);
+  try {
+    const job = await api("/api/deals" + (refresh ? "?refresh=true" : ""), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(readCriteria()),
+    });
+    store.set("dealJob", job.id);
+    handleJob(job);
+  } catch (err) {
+    setHunting(false);
+    $("dealError").textContent = err.message;
+    show("dealError");
+  }
+}
+
+function handleJob(job) {
+  clearTimeout(pollTimer);
+  if (job.status === "running") {
+    setHunting(true);
+    pollTimer = setTimeout(() => pollJob(job.id), 5000);
+    return;
+  }
+  setHunting(false);
+  store.set("dealJob", null);
+  if (job.status === "error") {
+    $("dealError").textContent = job.error || "Tilbudsjagten fejlede";
+    show("dealError");
+  } else {
+    store.set("lastDeals", job.result);
+    renderDeals(job.result);
+  }
+}
+
+async function pollJob(id) {
+  try {
+    handleJob(await api(`/api/deals/${encodeURIComponent(id)}`));
+  } catch (err) {
+    // Fx hvis serveren er genstartet - jobbet findes ikke længere.
+    setHunting(false);
+    store.set("dealJob", null);
+    $("dealError").textContent = err.message;
+    show("dealError");
+  }
+}
+
+function renderDeals(r) {
+  $("dealSummary").textContent = (r.cached ? "(Fra cache) " : "") + (r.summary || "");
+  if (!r.deals.length) {
+    $("dealList").innerHTML = `<li class="deal">Ingen tilbud matchede lige nu. Prøv at løsne kriterierne lidt.</li>`;
+  } else {
+    $("dealList").innerHTML = r.deals.map((d) => {
+      const name = d.vintage ? `${d.wine} ${d.vintage}` : d.wine;
+      const meta = [d.producer, d.region, d.grapes, d.color].filter(Boolean).join(" · ");
+      const size = d.bottle_ml !== 750 ? ` · ${d.bottle_ml / 10} cl` : "";
+      return `<li class="deal">
+        <div class="deal-top">
+          <div>
+            <div class="deal-name">${esc(name)}</div>
+            <div class="muted small">${esc(meta)}</div>
+          </div>
+          <div class="score ${d.deal_score >= 7 ? "" : "mid"}" title="Hvor godt et køb (1-10)">${esc(d.deal_score)}/10</div>
+        </div>
+        <div class="deal-prices">
+          <span class="deal-price">${esc(kr.format(d.price_dkk))}</span>
+          ${d.normal_price_dkk ? `<span class="deal-normal">${esc(kr.format(d.normal_price_dkk))}</span>` : ""}
+          ${d.discount_pct ? `<span class="discount">−${esc(d.discount_pct)} %</span>` : ""}
+        </div>
+        <div class="small"><strong>${esc(d.shop)}</strong>${esc(size)}${d.matched_rule ? ` · regel ${esc(d.matched_rule)}` : ""}</div>
+        ${d.why ? `<p class="deal-why small">${esc(d.why)}</p>` : ""}
+        <a class="btn" href="${esc(safeUrl(d.url))}" target="_blank" rel="noopener">Se tilbuddet ↗</a>
+      </li>`;
+    }).join("");
+  }
+  show("dealResults");
+}
+
+$("huntBtn").addEventListener("click", () => hunt());
+$("dealRefresh").addEventListener("click", (e) => { e.preventDefault(); hunt(true); });
+
+/* ---------- Opstart ---------- */
+
+loadProfile(currentProfile);
+const lastDeals = store.get("lastDeals", null);
+if (lastDeals) renderDeals(lastDeals);
+const runningJob = store.get("dealJob", null);
+if (runningJob) pollJob(runningJob);
+selectTab(store.get("tab", "price"));
