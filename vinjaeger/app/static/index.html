@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Vinjæger</title>
+  <meta name="theme-color" content="#7a1f3d">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>🍷 Vinjæger</h1>
+    <button id="settingsBtn" class="icon-btn" aria-label="Indstillinger">⚙︎</button>
+  </header>
+
+  <main>
+    <section class="card capture">
+      <p class="lead">Kig på en vin – find ud af, om den kan købes billigere.</p>
+      <label class="btn primary big">
+        📷 Tag billede af etiketten
+        <input id="photoInput" type="file" accept="image/*" capture="environment" hidden>
+      </label>
+      <button id="scanBtn" class="btn big" hidden>▦ Scan stregkode</button>
+      <div id="scanner" class="scanner" hidden>
+        <video id="scanVideo" playsinline muted></video>
+        <button id="scanStop" class="btn small">Luk scanner</button>
+      </div>
+    </section>
+
+    <section id="identified" class="card" hidden>
+      <div class="ident">
+        <img id="thumb" alt="">
+        <div>
+          <div class="muted small">Genkendt vin</div>
+          <div id="identName" class="ident-name"></div>
+          <div id="identMeta" class="muted small"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <form id="searchForm">
+        <label class="field">
+          <span>Vin</span>
+          <input id="q" name="q" type="search" placeholder="Fx Château Musar Rouge" required minlength="2" autocomplete="off">
+        </label>
+        <div class="row">
+          <label class="field">
+            <span>Årgang</span>
+            <input id="vintage" type="number" inputmode="numeric" min="1900" max="2100" placeholder="Valgfri">
+          </label>
+          <label class="field">
+            <span>Prisen her (kr.)</span>
+            <input id="myPrice" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Valgfri">
+          </label>
+        </div>
+        <input id="ean" type="hidden">
+        <button class="btn primary big" type="submit" id="searchBtn">🔎 Find billigste pris</button>
+      </form>
+    </section>
+
+    <section id="status" class="card status" hidden>
+      <div class="spinner" aria-hidden="true"></div>
+      <div id="statusText">Søger…</div>
+    </section>
+
+    <section id="error" class="card error" hidden></section>
+
+    <section id="results" hidden>
+      <div id="best" class="card best"></div>
+      <p id="summary" class="muted small pad"></p>
+      <ul id="offers" class="offers"></ul>
+      <p class="muted small pad">
+        Priserne er fundet automatisk på nettet og kan være forældede –
+        tjek altid prisen hos forhandleren. <a href="#" id="refreshLink">Søg igen uden cache</a>
+      </p>
+    </section>
+
+    <section id="historyBox" class="card" hidden>
+      <h2>Seneste søgninger</h2>
+      <ul id="history" class="history"></ul>
+    </section>
+  </main>
+
+  <dialog id="settings">
+    <form method="dialog">
+      <h2>Indstillinger</h2>
+      <label class="field">
+        <span>Adgangskode (hvis serveren kræver det)</span>
+        <input id="tokenInput" type="password" autocomplete="off">
+      </label>
+      <menu>
+        <button class="btn" value="clear" id="clearHistory" type="button">Ryd historik</button>
+        <button class="btn primary" value="save">Gem</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>

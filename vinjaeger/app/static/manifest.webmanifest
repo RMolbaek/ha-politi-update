@@ -1,0 +1,13 @@
+{
+  "name": "Vinjæger",
+  "short_name": "Vinjæger",
+  "description": "Find den billigste pris på den vin, du kigger på.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f2ef",
+  "theme_color": "#7a1f3d",
+  "lang": "da",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
